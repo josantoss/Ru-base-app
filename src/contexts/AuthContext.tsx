@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import type { ReactNode } from "react";
 import type { User, JwtPayload } from "../types";
 import { AuthContext } from "./AuthContextDefinition";
-import { MockAuthRepository } from "../data/repositories/Authrepository";
+import { ApiAuthRepository } from "../data/repositories/Authrepository";
 import { LoginUseCase, RegisterUseCase } from "../domain/usecases/AuthUseCases";
 
 interface AuthProviderProps {
@@ -50,12 +50,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (username: string, password: string) => {
-    const authRepository = new MockAuthRepository();
+  const login = async (orgIpc: string, indIpc: string, password: string) => {
+    const authRepository = new ApiAuthRepository();
     const loginUseCase = new LoginUseCase(authRepository);
     
     try {
-      const { token: newToken, user: userData } = await loginUseCase.execute(username, password);
+      const { token: newToken, user: userData } = await loginUseCase.execute(orgIpc, indIpc, password);
       
       // Store token and user data
       localStorage.setItem('authToken', newToken);
@@ -65,8 +65,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userData);
       setIsAuthenticated(true);
     } catch (error) {
-      throw new Error("Invalid credentials");
+      throw new Error(error instanceof Error ? error.message : "Invalid credentials");
     }
+  };
+
+  const getRoles = async (): Promise<string[]> => {
+    const authRepository = new ApiAuthRepository();
+    return await authRepository.getRoles();
   };
 
   // Google One Tap or button-based login
@@ -143,8 +148,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signup = async (username: string, password: string, email?: string) => {
-    // Demo: create account but DO NOT log in automatically
-    const authRepository = new MockAuthRepository();
+    // For now, we'll use mock repository for signup since the API doesn't have a signup endpoint
+    // In production, this should be replaced with a real signup API call
+    const authRepository = new ApiAuthRepository();
     const registerUseCase = new RegisterUseCase(authRepository);
     await registerUseCase.execute(username, password, email);
     // Intentionally skip storing token/user here to require explicit login
@@ -158,9 +164,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     signup,
-    login,
     loginWithGoogle,
-    loginWithSocialProfile
+    loginWithSocialProfile,
+    getRoles
   };
 
   return (
@@ -175,7 +181,10 @@ export interface AuthContextType {
   isAuthenticated: boolean;
   token: string | null;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  login: (orgIpc: string, indIpc: string, password: string) => Promise<void>;
   logout: () => void;
   signup: (username: string, password: string, email?: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
+  loginWithSocialProfile: (provider: 'google' | 'linkedin', profile: { sub?: string; id?: string; email?: string; name?: string; }) => Promise<void>;
+  getRoles: () => Promise<string[]>;
 }
