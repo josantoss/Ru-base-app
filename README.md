@@ -1,4 +1,4 @@
-### Ru Base App
+A### Ru Base App
 
 A starter React application demonstrating authentication, role-based authorization, and a clean routing setup using React Router. Built with TypeScript and Vite, styled with Tailwind CSS.
 
@@ -84,7 +84,11 @@ Required roles by page (defaults in the repo):
 
 ### Authentication model
 - `AuthProvider` wraps the app (`src/main.tsx`) and exposes auth state via context.
-- Tokens are decoded with `jwt-decode`. You can integrate real login flows in `data/repositories/Authrepository.ts` and `domain/usecases/AuthUseCases.ts`.
+- Tokens are decoded with `jwt-decode`. Real API integration is implemented in `data/repositories/Authrepository.ts` and `domain/usecases/AuthUseCases.ts`.
+- Login requires Organization IPC, Individual IPC, and Password as per manager's API specification.
+- API endpoints:
+  - Login: `POST /api/users/signin` with `{orgIpc, indIpc, password}`
+  - Roles: `GET /api/AspNetRoles/GetByProduct0`
 
 ---
 
@@ -97,7 +101,18 @@ Required roles by page (defaults in the repo):
 ### Environment variables
 Create a `.env` or `.env.local` in the project root for any runtime configuration. Vite exposes variables prefixed with `VITE_`.
 ```env
-VITE_API_BASE_URL=https://api.example.com
+# API Configuration
+VITE_API_BASE_URL=https://api-v1.oneklient.net
+
+# Google OAuth (Optional - for social login)
+# VITE_GOOGLE_CLIENT_ID=your_google_client_id_here
+
+# LinkedIn OAuth (Optional - for social login)
+# VITE_LINKEDIN_CLIENT_ID=your_linkedin_client_id_here
+# VITE_LINKEDIN_REDIRECT_URI=http://localhost:5173/linkedin-callback
+
+# LinkedIn Token Exchange (Optional - for backend integration)
+# VITE_LINKEDIN_TOKEN_EXCHANGE_URL=http://localhost:3000/api/auth/linkedin/exchange
 ```
 
 Use via `import.meta.env.VITE_API_BASE_URL`.
