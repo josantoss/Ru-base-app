@@ -1,0 +1,139 @@
+import React from "react";
+import ProtectedRoute from "../components/ProtectedRoute";
+import RoleGuard from "../components/RoleGuard";
+import Layout from "../components/Layout";
+import { Navigate, redirect } from "react-router-dom";
+import Landing from "../pages/Landing";
+import Home from "../pages/Home";
+import About from "../pages/About";
+import Login from "../pages/Login";
+import Categories from "../pages/Categories";
+import Users from "../pages/Users";
+import Roles from "../pages/Roles";
+import Signup from "../pages/Signup";
+import LinkedInCallback from "../pages/LinkedInCallback";
+import GoogleCallback from "../pages/GoogleCallback";
+import SocialAuthStart from "../pages/SocialAuthStart";
+
+// Loaders for protected routes
+const categoriesLoader = async () => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 100));
+  return ["Category 1", "Category 2", "Category 3"];
+};
+
+const usersLoader = async () => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 100));
+  return [
+    { id: "1", username: "john_doe", email: "john@example.com", role: "admin" },
+    { id: "2", username: "jane_smith", email: "jane@example.com", role: "user" },
+    { id: "3", username: "bob_wilson", email: "bob@example.com", role: "user" }
+  ];
+};
+
+const rolesLoader = async () => {
+  // Simulate API call
+  await new Promise(resolve => setTimeout(resolve, 100));
+  return [
+    { id: "1", name: "admin", description: "Full system access" },
+    { id: "2", name: "user", description: "Basic user access" },
+    { id: "3", name: "moderator", description: "Moderate content access" }
+  ];
+};
+
+// Helper: check token validity (matches AuthContext logic)
+const isTokenValid = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
+
+// Wrap a loader to ensure authentication before running it
+const requireAuthLoader = <T,>(loader?: () => Promise<T>) => {
+  return async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token || !isTokenValid(token)) {
+      return redirect('/login');
+    }
+    return loader ? loader() : (null as unknown as T);
+  };
+};
+
+// Public routes with Navbar
+export const publicRoutes = [
+  {
+    path: "/",
+    element: React.createElement(Landing)
+  },
+  {
+    path: "/home",
+    element: React.createElement(Home)
+  },
+  {
+    path: "/about",
+    element: React.createElement(About)
+  },
+  {
+    path: "/login",
+    element: React.createElement(Login)
+  },
+  {
+    path: "/signup",
+    element: React.createElement(Signup)
+  },
+  {
+    path: "/linkedin-callback",
+    element: React.createElement(LinkedInCallback)
+  },
+  {
+    path: "/google-callback",
+    element: React.createElement(GoogleCallback)
+  },
+  {
+    path: "/auth/:provider/start",
+    element: React.createElement(SocialAuthStart)
+  },
+  {
+    path: "*",
+    element: React.createElement(Navigate, { to: "/home", replace: true })
+  }
+];
+
+// Protected routes with role-based access
+export const protectedRoutes = [
+  {
+    path: "/categories",
+    element: React.createElement(RoleGuard, { requiredRole: "user", children: React.createElement(Categories) }),
+    loader: requireAuthLoader(categoriesLoader)
+  },
+  {
+    path: "/users",
+    element: React.createElement(RoleGuard, { requiredRole: "moderator", children: React.createElement(Users) }),
+    loader: requireAuthLoader(usersLoader)
+  },
+  {
+    path: "/roles",
+    element: React.createElement(RoleGuard, { requiredRole: "admin", children: React.createElement(Roles) }),
+    loader: requireAuthLoader(rolesLoader)
+  }
+];
+
+// Main route configuration
+export const routeConfig = {
+  element: React.createElement(Layout),
+  errorElement: React.createElement('div', { className: 'p-6' },
+    React.createElement('h1', { className: 'text-xl font-bold mb-2' }, 'Page not found'),
+    React.createElement('a', { href: '/home', className: 'text-blue-600 underline' }, 'Go to Home')
+  ),
+  children: [
+    ...publicRoutes,
+    {
+      element: React.createElement(ProtectedRoute),
+      children: protectedRoutes
+    }
+  ]
+};
