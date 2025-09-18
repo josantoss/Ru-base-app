@@ -1,8 +1,10 @@
 import type { User } from "../../types";
+import { getApiUrl } from "../../utils/apiConfig";
 
 export interface AuthRepository {
   login(
-    username: string,
+    orgIpc: string,
+    indIpc: string,
     password: string
   ): Promise<{ token: string; user: User }>;
   register(
@@ -10,19 +12,117 @@ export interface AuthRepository {
     password: string,
     email?: string
   ): Promise<{ token: string; user: User }>;
+  getRoles(): Promise<string[]>;
+}
+
+export interface LoginRequest {
+  orgIpc: string;
+  indIpc: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: {
+    id: string;
+    username: string;
+    role: string;
+    email?: string;
+  };
+}
+
+export interface RoleResponse {
+  id: string;
+  name: string;
+  normalizedName: string;
+}
+
+// Real API implementation using manager's endpoints
+export class ApiAuthRepository implements AuthRepository {
+  async login(
+    orgIpc: string,
+    indIpc: string,
+    password: string
+  ): Promise<{ token: string; user: User }> {
+    try {
+      const response = await fetch(getApiUrl('login'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          orgIpc,
+          indIpc,
+          password
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Login failed: ${response.status}`);
+      }
+
+      const data: LoginResponse = await response.json();
+      
+      return {
+        token: data.token,
+        user: {
+          id: data.user.id,
+          username: data.user.username,
+          role: data.user.role,
+          email: data.user.email
+        }
+      };
+    } catch (error) {
+      console.error('Login error:', error);
+      throw new Error(error instanceof Error ? error.message : 'Login failed');
+    }
+  }
+
+  async register(
+    _username: string,
+    _password: string,
+    _email?: string
+  ): Promise<{ token: string; user: User }> {
+    // API doesn't have a register endpoint, so we'll throw an error
+    throw new Error("Registration not supported by API. Please contact administrator.");
+  }
+
+  async getRoles(): Promise<string[]> {
+    try {
+      const response = await fetch(getApiUrl('roles'), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch roles: ${response.status}`);
+      }
+
+      const roles: RoleResponse[] = await response.json();
+      return roles.map(role => role.name);
+    } catch (error) {
+      console.error('Get roles error:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to fetch roles');
+    }
+  }
 }
 
 // Mock implementation for demo (replace with API calls in production).
 export class MockAuthRepository implements AuthRepository {
   async login(
-    username: string,
+    orgIpc: string,
+    indIpc: string,
     password: string
   ): Promise<{ token: string; user: User }> {
-    if (username === "test" && password === "test") {
+    // For demo purposes, accept any credentials
+    if (orgIpc && indIpc && password) {
       // Create a proper JWT token with role information
       const payload = {
         sub: "123",
-        username: "test",
+        username: `${orgIpc}-${indIpc}`,
         role: "admin",
         exp: Math.floor(Date.now() / 1000) + (60 * 60) // 1 hour from now
       };
@@ -35,7 +135,7 @@ export class MockAuthRepository implements AuthRepository {
       
       const mockUser: User = { 
         id: "123", 
-        username: "test",
+        username: `${orgIpc}-${indIpc}`,
         role: "admin",
         email: "test@example.com"
       };
@@ -44,9 +144,14 @@ export class MockAuthRepository implements AuthRepository {
     throw new Error("Invalid credentials");
   }
 
+  async getRoles(): Promise<string[]> {
+    // Mock roles for demo
+    return ['admin', 'user', 'moderator'];
+  }
+
   async register(
     username: string,
-    password: string,
+    _password: string,
     email?: string
   ): Promise<{ token: string; user: User }> {
     // Simulate network delay
