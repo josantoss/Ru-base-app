@@ -1,5 +1,5 @@
 import type { User } from "../../types";
-import type { AuthRepository } from "../../data/repositories/AuthRepository";
+import type { AuthRepository } from "../../data/repositories/Authrepository";
 
 interface LoginResult {
   token: string;
@@ -7,16 +7,24 @@ interface LoginResult {
 }
 
 export class LoginUseCase {
-  constructor(private authRepository: AuthRepository) {} // Explicit typing for exactOptionalPropertyTypes
+  private authRepository: AuthRepository;
+  
+  constructor(authRepository: AuthRepository) {
+    this.authRepository = authRepository;
+  }
 
-  async execute(username: string, password: string): Promise<LoginResult> {
-    const { token, user } = await this.authRepository.login(username, password);
+  async execute(orgIpc: string, indIpc: string, password: string): Promise<LoginResult> {
+    const { token, user } = await this.authRepository.login(orgIpc, indIpc, password);
     return { token, user };
   }
 }
 
 export class RegisterUseCase {
-  constructor(private authRepository: AuthRepository) {}
+  private authRepository: AuthRepository;
+  
+  constructor(authRepository: AuthRepository) {
+    this.authRepository = authRepository;
+  }
 
   async execute(username: string, password: string, email?: string): Promise<LoginResult> {
     const { token, user } = await this.authRepository.register(username, password, email);
