@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../hooks/useAuth";
+// import { useAuth } from "../../hooks/useAuth";
 
 type Provider = "google" | "linkedin";
 
 const SocialAuthStart: React.FC = () => {
   const { provider } = useParams<{ provider: Provider }>();
   const navigate = useNavigate();
-  const { loginWithSocialProfile } = useAuth();
+  // const { loginWithSocialProfile } = useAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!provider) return;
@@ -55,9 +55,9 @@ const SocialAuthStart: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 space-y-4">
         <h1 className="text-xl font-semibold text-gray-900">Continue with {provider.charAt(0).toUpperCase() + provider.slice(1)}</h1>
         <p className="text-sm text-gray-600">Real {provider} OAuth is not configured. Enter your {provider} email to proceed to account creation.</p>
-        {error && (
+        {/* {error && (
           <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-3" role="alert">{error}</div>
-        )}
+        )} */}
         <form onSubmit={onSubmitMock} className="space-y-3">
           <input
             type="email"

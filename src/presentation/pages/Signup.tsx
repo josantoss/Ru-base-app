@@ -8,7 +8,7 @@ const Signup: React.FC = () => {
   const googleBtnRef = useRef<HTMLDivElement | null>(null);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
   const linkedInClientId = import.meta.env.VITE_LINKEDIN_CLIENT_ID as string | undefined;
-  const linkedInRedirect = (import.meta.env.VITE_LINKEDIN_REDIRECT_URI as string | undefined) || 'http://localhost:5173/linkedin-callback';
+  // const linkedInRedirect = (import.meta.env.VITE_LINKEDIN_REDIRECT_URI as string | undefined) || 'http://localhost:5173/linkedin-callback';
   const isLinkedInConfigured = Boolean(linkedInClientId);
 
   // Initialize Google button
