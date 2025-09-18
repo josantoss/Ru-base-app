@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import ApiStatus from "../components/ApiStatus";
 
 const Login: React.FC = () => {
-  const [username, setUsername] = useState("");
+  const [orgIpc, setOrgIpc] = useState("");
+  const [indIpc, setIndIpc] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const { login, loginWithGoogle } = useAuth();
@@ -11,6 +13,13 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const googleBtnRef = useRef<HTMLDivElement | null>(null);
   const [isGoogleReady, setIsGoogleReady] = useState(false);
+
+  // Clear any autofilled data on component mount
+  useEffect(() => {
+    setOrgIpc("");
+    setIndIpc("");
+    setPassword("");
+  }, []);
 
   useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
@@ -57,10 +66,25 @@ const Login: React.FC = () => {
     e.preventDefault();
     try {
       setError(null);
-      await login(username, password);
+      
+      // Basic validation
+      if (!orgIpc.trim() || !indIpc.trim() || !password.trim()) {
+        setError("Please fill in all required fields.");
+        return;
+      }
+
+      // Validate IPC format (should be numeric/alphanumeric, not email)
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(orgIpc) || emailRegex.test(indIpc)) {
+        setError("Please enter valid IPC values, not email addresses.");
+        return;
+      }
+      
+      await login(orgIpc, indIpc, password);
       navigate("/");
-    } catch {
-      setError("Login failed. Please check your credentials and try again.");
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Login failed. Please check your credentials and try again.";
+      setError(errorMessage);
     }
   };
 
@@ -69,27 +93,53 @@ const Login: React.FC = () => {
   return (
     <div className="p-4 max-w-md mx-auto bg-white shadow-lg rounded-lg">
       <h1 className="text-2xl font-bold mb-4 text-gray-900">Login</h1>
+      <ApiStatus />
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-700">
+          <strong>Note:</strong> Enter your Organization IPC and Individual IPC credentials as provided by your administrator.
+        </p>
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-md p-3" role="alert">
             {error}
           </div>
         )}
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="Username"
-          className="bg-white border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm w-full"
-        />
-        <div className="relative">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Organization IPC</label>
           <input
-            type={showPassword ? "text" : "password"}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
-            className="bg-white border border-gray-200 rounded-lg px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm w-full"
+            type="text"
+            value={orgIpc}
+            onChange={(e) => setOrgIpc(e.target.value)}
+            placeholder="Enter Organization IPC (e.g., 12345)"
+            className="bg-white border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm w-full"
+            required
+            autoComplete="off"
           />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Individual IPC</label>
+          <input
+            type="text"
+            value={indIpc}
+            onChange={(e) => setIndIpc(e.target.value)}
+            placeholder="Enter Individual IPC (e.g., 67890)"
+            className="bg-white border border-gray-200 rounded-lg px-4 py-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm w-full"
+            required
+            autoComplete="off"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className="bg-white border border-gray-200 rounded-lg px-4 py-3 pr-12 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm w-full"
+              required
+            />
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
@@ -102,13 +152,29 @@ const Login: React.FC = () => {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><path d="M12 4c4.07 0 8.88 3.18 11.05 8.03a.9.9 0 0 1 0 .66C20.88 17.82 16.07 21 12 21S3.12 17.82.95 12.97a.9.9 0 0 1 0-.66C3.12 7.18 7.93 4 12 4Zm0 2c-3.3 0-7.47 2.66-9.43 6.5C4.53 16.34 8.7 19 12 19s7.47-2.66 9.43-6.5C19.47 8.66 15.3 6 12 6Zm0 2.75A4.25 4.25 0 1 1 7.75 13 4.25 4.25 0 0 1 12 8.75Zm0 2A2.25 2.25 0 1 0 14.25 13 2.25 2.25 0 0 0 12 10.75Z"/></svg>
             )}
           </button>
+          </div>
         </div>
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 w-full"
-        >
-          Login
-        </button>
+        <div className="flex space-x-3">
+          <button
+            type="submit"
+            className="flex-1 bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setOrgIpc("");
+              setIndIpc("");
+              setPassword("");
+              setError(null);
+            }}
+            className="px-4 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-all duration-300"
+            title="Clear form"
+          >
+            Clear
+          </button>
+        </div>
       </form>
       <div className="text-center mt-4">
         <span className="text-sm text-gray-600">Don't have an account?</span>{" "}
