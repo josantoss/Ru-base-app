@@ -14,6 +14,7 @@ import Signup from "../pages/Signup";
 import LinkedInCallback from "../pages/LinkedInCallback";
 import GoogleCallback from "../pages/GoogleCallback";
 import SocialAuthStart from "../pages/SocialAuthStart";
+import { getApiUrl } from "../../utils/apiConfig";
 
 // Loaders for protected routes
 const categoriesLoader = async () => {
@@ -33,13 +34,35 @@ const usersLoader = async () => {
 };
 
 const rolesLoader = async () => {
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 100));
-  return [
-    { id: "1", name: "admin", description: "Full system access" },
-    { id: "2", name: "user", description: "Basic user access" },
-    { id: "3", name: "moderator", description: "Moderate content access" }
-  ];
+  try {
+    // Use real API to fetch roles
+    const response = await fetch(getApiUrl('roles'), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch roles: ${response.status}`);
+    }
+
+    const roles = await response.json();
+    // Transform API response to match expected format
+    return roles.map((role: any, index: number) => ({
+      id: role.id || (index + 1).toString(),
+      name: role.name || role.normalizedName || 'Unknown',
+      description: role.description || `Role: ${role.name || role.normalizedName || 'Unknown'}`
+    }));
+  } catch (error) {
+    console.error('Error fetching roles:', error);
+    // Fallback to mock data if API fails
+    return [
+      { id: "1", name: "admin", description: "Full system access" },
+      { id: "2", name: "user", description: "Basic user access" },
+      { id: "3", name: "moderator", description: "Moderate content access" }
+    ];
+  }
 };
 
 // Helper: check token validity (matches AuthContext logic)
