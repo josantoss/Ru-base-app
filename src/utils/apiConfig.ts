@@ -20,10 +20,10 @@ export const getApiUrl = (endpoint: keyof typeof API_CONFIG.endpoints): string =
 };
 
 /**
- * Default login credentials for testing (as provided by manager)
+ * Default login credentials for testing (use any values in development)
  */
 export const DEFAULT_CREDENTIALS = {
-  orgIpc: '12345',
-  indIpc: '67890',
-  password: 'Rundie@1'
+  orgIpc: 'any-value',
+  indIpc: 'any-value',
+  password: 'any-value'
 } as const;

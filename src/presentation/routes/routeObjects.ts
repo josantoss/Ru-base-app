@@ -1,20 +1,34 @@
 import React from "react";
+import { redirect } from "react-router-dom";
 import ProtectedRoute from "../components/ProtectedRoute";
 import RoleGuard from "../components/RoleGuard";
 import Layout from "../components/Layout";
-import { Navigate, redirect } from "react-router-dom";
 import Landing from "../pages/Landing";
 import Home from "../pages/Home";
 import About from "../pages/About";
 import Login from "../pages/Login";
-import Categories from "../pages/Categories";
-import Users from "../pages/Users";
-import Roles from "../pages/Roles";
 import Signup from "../pages/Signup";
 import LinkedInCallback from "../pages/LinkedInCallback";
 import GoogleCallback from "../pages/GoogleCallback";
 import SocialAuthStart from "../pages/SocialAuthStart";
+import Categories from "../pages/Categories";
+import Users from "../pages/Users";
+import Roles from "../pages/Roles";
 import { getApiUrl } from "../../utils/apiConfig";
+import type { UserRole } from "../../types";
+
+// Helper function to create role-protected components
+const withRoleGuard = (Component: React.ComponentType, requiredRole: UserRole) => {
+  return () => React.createElement(
+    RoleGuard,
+    { requiredRole, children: React.createElement(Component) }
+  );
+};
+
+// Role-protected components
+const ProtectedCategories = withRoleGuard(Categories, "user");
+const ProtectedUsers = withRoleGuard(Users, "moderator");
+const ProtectedRoles = withRoleGuard(Roles, "admin");
 
 // Loaders for protected routes
 const categoriesLoader = async () => {
@@ -122,7 +136,7 @@ export const publicRoutes = [
   },
   {
     path: "*",
-    element: React.createElement(Navigate, { to: "/home", replace: true })
+    loader: () => redirect("/home")
   }
 ];
 
@@ -130,28 +144,33 @@ export const publicRoutes = [
 export const protectedRoutes = [
   {
     path: "/categories",
-    element: React.createElement(RoleGuard, { requiredRole: "user", children: React.createElement(Categories) }),
+    element: React.createElement(ProtectedCategories),
     loader: requireAuthLoader(categoriesLoader)
   },
   {
     path: "/users",
-    element: React.createElement(RoleGuard, { requiredRole: "moderator", children: React.createElement(Users) }),
+    element: React.createElement(ProtectedUsers),
     loader: requireAuthLoader(usersLoader)
   },
   {
     path: "/roles",
-    element: React.createElement(RoleGuard, { requiredRole: "admin", children: React.createElement(Roles) }),
+    element: React.createElement(ProtectedRoles),
     loader: requireAuthLoader(rolesLoader)
   }
 ];
 
+// Error boundary component for 404 pages
+const ErrorBoundary = () => React.createElement(
+  'div',
+  { className: 'p-6' },
+  React.createElement('h1', { className: 'text-xl font-bold mb-2' }, 'Page not found'),
+  React.createElement('a', { href: '/home', className: 'text-blue-600 underline' }, 'Go to Home')
+);
+
 // Main route configuration
 export const routeConfig = {
   element: React.createElement(Layout),
-  errorElement: React.createElement('div', { className: 'p-6' },
-    React.createElement('h1', { className: 'text-xl font-bold mb-2' }, 'Page not found'),
-    React.createElement('a', { href: '/home', className: 'text-blue-600 underline' }, 'Go to Home')
-  ),
+  errorElement: React.createElement(ErrorBoundary),
   children: [
     ...publicRoutes,
     {
